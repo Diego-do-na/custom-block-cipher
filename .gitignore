@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+algorithm/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Local env
+*.local
+
+# Agent skill tooling (installed locally via `npx skills add`, not part of the assignment deliverable)
+.agents/
+.claude/
+skills-lock.json

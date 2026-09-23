@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+/*
+ * Design tokens chosen via the ui-ux-pro-max skill for a projected, presentation-friendly
+ * technical demo: Minimalism & Swiss Style (dashboards/documentation), a dark
+ * developer-tool palette, and the "Developer Mono" font pairing (JetBrains Mono for
+ * headings/hex data, IBM Plex Sans for body copy).
+ */
+@theme {
+  --color-background: #0f172a;
+  --color-foreground: #f8fafc;
+
+  --color-card: #1b2336;
+  --color-card-foreground: #f8fafc;
+
+  --color-panel: #1e293b;
+  --color-panel-foreground: #f8fafc;
+
+  --color-muted: #272f42;
+  --color-muted-foreground: #94a3b8;
+
+  --color-border: #334155;
+
+  /* Success / "correct" (decrypt matches original, valid round-trip). */
+  --color-accent: #22c55e;
+  --color-accent-foreground: #04160b;
+
+  /* Error / invalid state (bad padding, mismatched decrypt). */
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #1a0505;
+
+  /* Confusion-technique highlight (XOR, S-box substitution). */
+  --color-confusion: #a78bfa;
+  --color-confusion-foreground: #1a1033;
+
+  /* Diffusion-technique highlight (bit rotation, CBC chaining). */
+  --color-diffusion: #22d3ee;
+  --color-diffusion-foreground: #04262b;
+
+  /* Avalanche "bit changed" highlight. */
+  --color-changed: #f59e0b;
+  --color-changed-foreground: #221200;
+
+  --color-ring: #38bdf8;
+
+  --font-sans:
+    'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display:
+    'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --font-mono:
+    'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-diffusion/30 text-foreground;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
