@@ -12,12 +12,19 @@ anything you actually care about. There is no peer review, no resistance analysi
 against differential/linear cryptanalysis, and several intentional simplifications
 noted below.
 
+**Implementation.** The cipher is written in C++20 (`algorithm/cpp/`) and compiled
+to WebAssembly for the browser demo. It is a like-for-like port of the original
+TypeScript implementation (commit `a517dab`): every operation, parameter and
+output is unchanged, which is verified byte-for-byte against reference vectors
+captured from that implementation (`algorithm/test/vectors/golden.json`). The
+design described below is exactly the design that was ported.
+
 ## The four required techniques
 
-1. **Confusion #1 — XOR with a round subkey.** `algorithm/src/blockCipher.ts`.
+1. **Confusion #1 — XOR with a round subkey.** `algorithm/cpp/src/block_cipher.cpp`.
    XOR is its own inverse (`x ^ k ^ k == x`), so the same subkey that encrypts a
    round also decrypts it.
-2. **Confusion #2 — S-box substitution.** `algorithm/src/sbox.ts`. A fixed lookup
+2. **Confusion #2 — S-box substitution.** `algorithm/cpp/src/sbox.cpp`. A fixed lookup
    table of 256 values, generated once as a random permutation of 0..255 (Fisher-
    Yates shuffle, seeded PRNG — see `algorithm/scripts/generate-sbox.mjs`) and
    hardcoded as a constant. **Known limitation**: unlike AES's S-box, which is
@@ -25,8 +32,8 @@ noted below.
    cryptanalysis, this S-box is *just* a random permutation. It supplies
    non-linearity (an attacker can't predict output from input via a linear
    formula), but no proven cryptanalytic resistance.
-3. **Diffusion #1 — bit rotation.** `algorithm/src/blockCipher.ts`, via
-   `rotateBitsLeft`/`rotateBitsRight` in `algorithm/src/bytes.ts`. The block is
+3. **Diffusion #1 — bit rotation.** `algorithm/cpp/src/block_cipher.cpp`, via
+   `rotateBitsLeft`/`rotateBitsRight` in `algorithm/cpp/src/bytes.cpp`. The block is
    rotated by `ROTATE_BITS = 3` bits after each round's XOR+S-box step — **not** a
    whole-byte rotation. This matters: XOR and the S-box both act independently per
    byte position, so a whole-byte rotation (a pure position permutation) can never
@@ -37,7 +44,7 @@ noted below.
    original `rotateBytesLeft`-based version); switching to a non-byte-aligned bit
    rotation raised that to ~45%, because it spills bits across byte boundaries,
    which the *next* round's S-box then mixes non-linearly.
-4. **Diffusion #2 — CBC chaining.** `algorithm/src/cbc.ts`. Each plaintext block
+4. **Diffusion #2 — CBC chaining.** `algorithm/cpp/src/cbc.cpp`. Each plaintext block
    is XORed with the previous block's ciphertext (or the IV, for block 0) before
    the per-block rounds run. This is diffusion *across the whole message*: a
    change in block `i` cascades into every block after it, not just within one
@@ -48,7 +55,8 @@ noted below.
 - **Master key**: secret. Never displayed or logged as if public anywhere in this
   codebase or the demo app.
 - **IV**: not secret. Generated fresh per encryption (`randomBytes` in
-  `algorithm/src/bytes.ts`, via `crypto.getRandomValues`), shown/transmitted
+  `algorithm/cpp/src/bytes.cpp`, via `getentropy` — the OS CSPRNG natively, and
+  `crypto.getRandomValues` in the WebAssembly build), shown/transmitted
   alongside the ciphertext (`encrypt()`'s `combinedHex` starts with the IV). Its
   only requirement is uniqueness per message under a given key — reusing an IV
   with the same key breaks the CBC diffusion guarantee (two messages with the same
@@ -62,7 +70,7 @@ noted below.
 ## Other known, intentional limitations
 
 - **Key derivation is not a cryptographic hash.** `deriveMasterKeyBytes` in
-  `algorithm/src/keySchedule.ts` folds an arbitrary-length key string down to
+  `algorithm/cpp/src/key_schedule.cpp` folds an arbitrary-length key string down to
   `BLOCK_SIZE` bytes via simple XOR-folding, not a real hash function. This is
   deterministic (required) but not collision-resistant — different keys could in
   principle fold to the same bytes. Acceptable for a demo; not for real use.
@@ -79,7 +87,13 @@ noted below.
   validation failing on decrypt, but that's an accident of padding, not a security
   guarantee — a real system would add a MAC.
 - **Multiple rounds compound the avalanche effect**: each round re-applies both
-  confusion and diffusion, and empirically (see `algorithm/test/cipher.test.ts`'s
-  avalanche test) a single flipped plaintext or key bit changes roughly 40-50% of
+  confusion and diffusion, and empirically (see the avalanche tests in
+  `algorithm/cpp/test/cipher_test.cpp` and `algorithm/test/cipher.test.ts`) a single flipped plaintext or key bit changes roughly 40-50% of
   final ciphertext bits at the default 6 rounds — the intended, demonstrated
   property of a well-mixed block cipher.
+- **A message starting with U+FEFF loses that character on decrypt.** Decryption
+  turns the recovered bytes into text the way JavaScript's `TextDecoder` does,
+  which drops one leading byte-order mark, so `decrypt(encrypt(m))` returns `m`
+  without its first character when `m` begins with U+FEFF. This came from the
+  original implementation and is kept unchanged. Every other UTF-8 string
+  round-trips exactly.

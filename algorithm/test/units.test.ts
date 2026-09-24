@@ -1,11 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SBOX, INV_SBOX } from '../src/sbox.js';
-import { pkcs7Pad, pkcs7Unpad } from '../src/padding.js';
-import { deriveMasterKeyBytes, deriveSubkeys } from '../src/keySchedule.js';
-import { rotateBitsLeft, rotateBytesLeft, rotateBytesRight, xorBytes, bitDiff, bytesToHex, hexToBytes } from '../src/bytes.js';
-import { BLOCK_SIZE } from '../src/constants.js';
+// Runs against the package entry point (C++ via WASM) — see the note in cipher.test.ts.
+import {
+  SBOX,
+  INV_SBOX,
+  pkcs7Pad,
+  pkcs7Unpad,
+  deriveMasterKeyBytes,
+  deriveSubkeys,
+  rotateBitsLeft,
+  rotateBytesLeft,
+  rotateBytesRight,
+  xorBytes,
+  bitDiff,
+  bytesToHex,
+  hexToBytes,
+  BLOCK_SIZE,
+} from '../src/index.js';
 
 test('SBOX is a permutation of 0..255', () => {
   const seen = new Set(SBOX);

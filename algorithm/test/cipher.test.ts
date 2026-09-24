@@ -1,11 +1,26 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { encryptBlock, decryptBlock } from '../src/blockCipher.js';
-import { deriveMasterKeyBytes, deriveSubkeys } from '../src/keySchedule.js';
-import { encrypt, decrypt, encryptWithTrace, encryptCbc, pkcs7Pad } from '../src/index.js';
-import { bitDiff, concatBytes, textToBytes } from '../src/bytes.js';
-import { BLOCK_SIZE, MIN_ROUNDS, MAX_ROUNDS } from '../src/constants.js';
+// These run against the package entry point — the C++ cipher compiled to WASM, through
+// the exact binding layer the demo imports — rather than against the C++ directly
+// (cpp/test/ ports these same cases to Catch2 for the native build).
+import {
+  encryptBlock,
+  decryptBlock,
+  deriveMasterKeyBytes,
+  deriveSubkeys,
+  encrypt,
+  decrypt,
+  encryptWithTrace,
+  encryptCbc,
+  pkcs7Pad,
+  bitDiff,
+  concatBytes,
+  textToBytes,
+  BLOCK_SIZE,
+  MIN_ROUNDS,
+  MAX_ROUNDS,
+} from '../src/index.js';
 
 test('encryptBlock/decryptBlock round-trip for arbitrary blocks and round counts', () => {
   const master = deriveMasterKeyBytes('block level key');
@@ -101,6 +116,29 @@ test('avalanche effect: a single flipped plaintext bit changes a large share of 
   // just assert a strong, unmistakable avalanche rather than pin an exact number.
   assert.ok(ratio > 0.25, `expected a strong avalanche effect, got ${(ratio * 100).toFixed(1)}% bits changed`);
   void base;
+});
+
+// NEW in the C++ port (not in the original 22 tests): SECURITY.md says a flipped *key*
+// bit also avalanches, which the original suite never exercised.
+test('avalanche effect: a single flipped key bit changes a large share of ciphertext bits', () => {
+  const key = 'avalanche test key';
+  const message = 'The quick brown fox jumps over the lazy dog';
+
+  const { trace: baseTrace } = encryptWithTrace(message, key);
+  const baseCipher = concatBytes(...baseTrace.blocks.map((b) => b.cipherBlock));
+
+  // Same IV and plaintext as base; only the lowest bit of the first master-key byte differs.
+  const flippedMasterKey = baseTrace.masterKeyBytes.slice();
+  flippedMasterKey[0] ^= 0b00000001;
+  const flippedSubkeys = deriveSubkeys(flippedMasterKey, baseTrace.rounds);
+  const plainBlocks = chunkBytes(baseTrace.paddedPlainBytes, BLOCK_SIZE);
+  const { cipherBlocks } = encryptCbc(plainBlocks, baseTrace.iv, flippedSubkeys);
+  const flippedCipher = concatBytes(...cipherBlocks);
+
+  const { diffBits, totalBits } = bitDiff(baseCipher, flippedCipher);
+  const ratio = diffBits / totalBits;
+
+  assert.ok(ratio > 0.25, `expected a strong avalanche effect, got ${(ratio * 100).toFixed(1)}% bits changed`);
 });
 
 function chunkBytes(bytes: Uint8Array, size: number): Uint8Array[] {

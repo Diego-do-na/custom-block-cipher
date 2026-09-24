@@ -5,6 +5,10 @@ node_modules/
 dist/
 dist-ssr/
 algorithm/dist/
+algorithm/cpp/build/
+# Generated from algorithm/cpp by `npm run algorithm:build:wasm` (also run automatically
+# before tests and demo builds). Its hand-written types, cipher.d.mts, are committed.
+algorithm/wasm/generated/cipher.mjs
 
 # Logs
 *.log
