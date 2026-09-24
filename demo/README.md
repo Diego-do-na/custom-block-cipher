@@ -13,6 +13,10 @@ npm run demo:dev    # http://localhost:5173
 npm run demo:build
 ```
 
+The cipher is C++ compiled to WebAssembly. `dev` and `build` rebuild that module
+from source first (`predev`/`prebuild`), so Emscripten must be installed — see
+[`../CLAUDE.md`](../CLAUDE.md) for prerequisites.
+
 ## Sections
 
 - **How It Works** (`src/components/explainer`) — confusion/diffusion primer with

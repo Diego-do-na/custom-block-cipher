@@ -5,7 +5,9 @@
   "description": "University assignment: a from-scratch symmetric block cipher demonstrating confusion and diffusion, plus an interactive presentation demo.",
   "workspaces": ["algorithm", "demo"],
   "scripts": {
+    "algorithm:build:wasm": "npm run build:wasm --workspace algorithm",
     "algorithm:test": "npm run test --workspace algorithm",
+    "algorithm:typecheck": "npm run typecheck --workspace algorithm",
     "algorithm:cli": "npm run cli --workspace algorithm",
     "demo:dev": "npm run dev --workspace demo",
     "demo:build": "npm run build --workspace demo"

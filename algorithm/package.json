@@ -2,13 +2,17 @@
   "name": "@cipher/algorithm",
   "version": "1.0.0",
   "private": true,
-  "description": "From-scratch symmetric block cipher (custom S-box, rounds, CBC mode) for a university confusion/diffusion assignment.",
+  "description": "From-scratch symmetric block cipher (custom S-box, rounds, CBC mode) for a university confusion/diffusion assignment. Implemented in C++, compiled to WebAssembly for JavaScript consumers.",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "cli": "tsx src/cli.ts",
-    "test": "tsx --test test/*.test.ts",
+    "build:wasm": "make -s -C cpp wasm",
+    "cli": "make -s -C cpp cli && ./cpp/build/cipher-cli",
+    "pretest": "npm run build:wasm",
+    "test": "npm run test:cpp && npm run test:bindings",
+    "test:cpp": "make -s -C cpp test",
+    "test:bindings": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
